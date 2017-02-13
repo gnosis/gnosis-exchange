@@ -26,7 +26,7 @@ contract Exchange {
         bytes32 exchangeIdentifier,
         uint8 tokenIndex,
         uint amount,
-        address suppliedToken,
+        address suppliedTokenAddress,
         uint newSupply
     );
 
@@ -35,7 +35,7 @@ contract Exchange {
         bytes32 exchangeIdentifier,
         uint8 purchasedTokenIndex,
         uint amountPurchased,
-        address purchasedToken,
+        address purchasedTokenAddress,
         uint[2] newSupplies
     );
 
@@ -69,6 +69,7 @@ contract Exchange {
             tokens: tokens,
             supplies: supplies
         });
+        LogAddExchange(exchangeIdentifier, tokens, supplies);
     }
 
     /// @notice Send `amount` of token `tokens[tokenIndex]` to this contract to fund exchange
@@ -79,9 +80,11 @@ contract Exchange {
         public
     {
         Exchange ex = exchanges[exchangeIdentifier];
-        if (!Token(ex.tokens[tokenIndex]).transferFrom(msg.sender, this, amount))
+        address suppliedTokenAddress = ex.tokens[tokenIndex];
+        if (!Token(suppliedTokenAddress).transferFrom(msg.sender, this, amount))
             throw;
         ex.supplies[tokenIndex] += amount;
+        LogFundExchange(exchangeIdentifier, tokenIndex, amount, suppliedTokenAddress, ex.supplies[tokenIndex]);
     }
 
     /// @notice Send `calcCosts(exchangeIdentifier, tokenIndex, amount)` of `tokens[1-tokenIndex]` to buy `amount` of `tokens[tokenIndex]` from exchange.
@@ -100,6 +103,7 @@ contract Exchange {
             throw;
         ex.supplies[paymentTokenIndex] += costs;
         ex.supplies[tokenIndex] -= amount;
+        LogExchangeTransaction(exchangeIdentifier, tokenIndex, amount, ex.tokens[tokenIndex], ex.supplies);
     }
 
     /// @dev Will price `tokens[tokenIndex]` to keep `supplies[0] * supplies[1]` the same after sending `amount` of `tokens[tokenIndex]` to `msg.sender` and receiving the calculated price of `tokens[1-tokenIndex]` from `msg.sender`
