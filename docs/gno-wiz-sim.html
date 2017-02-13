@@ -1,0 +1,171 @@
+<main>
+
+<h1>Input</h1>
+<canvas id="total-wiz"></canvas>
+<canvas id="gno-locked"></canvas>
+<canvas id="wiz-consumed"></canvas>
+<canvas id="gno-to-lock"></canvas>
+
+<h1>Output</h1>
+<canvas id="wiz-consumed-30"></canvas>
+<canvas id="wiz-per-day-per-gno"></canvas>
+
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.js" integrity="sha256-1qeNeAAFNi/g6PFChfXQfa6CQ8eXoHXreohinZsoJOQ=" crossorigin="anonymous"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js" integrity="sha256-RASNMNlmRtIreeznffYMDUxBXcMRjijEaaGF/gxT6vw=" crossorigin="anonymous"></script> -->
+<script>
+'use strict';
+
+function createChart(opts) {
+    var chartCanvas = opts.chartCanvas,
+        chartData = opts.chartData || [],
+        title = opts.title || '',
+        range = opts.range != null ? opts.range : 1,
+        chartDataFunction = opts.chartDataFunction || function(data) {
+            for(var i = 0; i < NUM_DAYS; i++) {
+                data[i] = { x: i, y: i * range / NUM_DAYS };
+            }
+        },
+        type = opts.type || 'input';
+
+    chartDataFunction(chartData);
+
+    var chart = new Chart(chartCanvas, {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: 'Scatter Dataset',
+                data: chartData,
+                lineTension: 0
+            }]
+        },
+        options: {
+            title: {
+                display: true,
+                text: title
+            },
+            scales: {
+                xAxes: [{
+                    type: 'linear',
+                    position: 'bottom'
+                }]
+            }
+        }
+    });
+
+    if(type === 'input') {
+        function getCoordinatesFromMouseEvent(e) {
+            var xScale = chart.scales['x-axis-0'],
+                yScale = chart.scales['y-axis-0'],
+                hParam = (e.layerX - xScale.left - xScale.paddingLeft) / (xScale.width - xScale.paddingLeft - xScale.paddingRight),
+                vParam = (chart.chartArea.bottom - e.layerY) / (chart.chartArea.bottom - chart.chartArea.top),
+                xCoord = hParam * (xScale.end - xScale.start) + xScale.start,
+                yCoord = vParam * (yScale.end - yScale.start) + yScale.start;
+            return { x: xCoord, y: yCoord };
+        }
+
+        function updateChartWithCoordinates(xCoord, yCoord) {
+            if(xCoord >= 0 && xCoord < NUM_DAYS) {
+                chartData[xCoord] = { x: xCoord, y: yCoord };
+                chart.update(0);
+            }
+        }
+
+        var lastChartPos = { x: 0, y: 0 };
+        chartCanvas.addEventListener('mousedown', function(e) {
+            lastChartPos = getCoordinatesFromMouseEvent(e);
+            updateChartWithCoordinates(Math.round(lastChartPos.x), lastChartPos.y);
+        });
+
+        chartCanvas.addEventListener('mousemove', function(e) {
+            if(e.buttons === 1) {
+                var chartPos = getCoordinatesFromMouseEvent(e),
+                    step = lastChartPos.x <= chartPos.x ? 1 : -1;
+                for(var i = Math.round(lastChartPos.x); i !== Math.round(chartPos.x); i += step) {
+                    updateChartWithCoordinates(i,
+                        (i - lastChartPos.x) * (chartPos.y - lastChartPos.y) /
+                        (chartPos.x - lastChartPos.x) + lastChartPos.y);
+                }
+                lastChartPos = chartPos;
+            }
+        });
+    } else {
+        setInterval(function() {
+            chartDataFunction(chartData);
+            chart.update(0);
+        }, 1000);
+    }
+}
+
+var NUM_DAYS = 90,
+    totalWiz = [],
+    gnoLocked = [],
+    wizConsumed = [],
+    gnoToLock = [],
+    wizConsumed30 = [],
+    wizPerDayPerGNO = [];
+
+createChart({
+    chartCanvas: document.getElementById("total-wiz"),
+    chartData: totalWiz,
+    title: 'Total WIZ',
+    range: 1000
+});
+
+createChart({
+    chartCanvas: document.getElementById("gno-locked"),
+    chartData: gnoLocked,
+    title: 'Total GNO Locked',
+    range: 1000
+});
+
+createChart({
+    chartCanvas: document.getElementById("wiz-consumed"),
+    chartData: wizConsumed,
+    title: 'Total WIZ Consumed',
+    range: 100
+});
+
+createChart({
+    chartCanvas: document.getElementById("gno-to-lock"),
+    chartData: gnoToLock,
+    title: 'GNO To Lock',
+    range: 0
+});
+
+// -----------------------------------------------------------------------------
+
+createChart({
+    type: 'output',
+    chartCanvas: document.getElementById("wiz-consumed-30"),
+    chartData: wizConsumed30,
+    title: 'Total WIZ Consumed 30 Days Cumulative',
+    chartDataFunction: function(data) {
+        var wizCons = 0;
+        for(var i = 0; i < NUM_DAYS; i++) {
+            wizCons += wizConsumed[i].y;
+            if(i - 30 >= 0) {
+                wizCons -= wizConsumed[i - 30].y;
+            }
+            data[i] = {x: i, y: wizCons};
+        }
+    }
+});
+
+createChart({
+    type: 'output',
+    chartCanvas: document.getElementById("wiz-per-day-per-gno"),
+    chartData: wizPerDayPerGNO,
+    title: 'WIZ Per Day Per GNO',
+    chartDataFunction: function(data) {
+        for(var i = 0; i < NUM_DAYS; i++) {
+            data[i] = {
+                x: i,
+                y: ((wizConsumed30[i].y / 30) +
+                    Math.max(0, ((wizConsumed30[i].y * 20) - totalWiz[i].y) / 90))
+                    / (gnoLocked[i].y + gnoToLock[i].y)
+            };
+        }
+    }
+});
+</script>
