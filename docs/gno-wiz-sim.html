@@ -5,7 +5,7 @@
 }
 canvas {
     width: 100%;
-    max-width: 480px;
+    max-width: 400px;
 }
 </style>
 <main>
@@ -15,7 +15,6 @@ canvas {
     <canvas id="total-wiz"></canvas>
     <canvas id="gno-locked"></canvas>
     <canvas id="wiz-consumed"></canvas>
-    <canvas id="gno-to-lock"></canvas>
 </div class="charts">
 
 <h1>Output</h1>
@@ -115,7 +114,6 @@ var NUM_DAYS = 90,
     totalWiz = [],
     gnoLocked = [],
     wizConsumed = [],
-    gnoToLock = [],
     wizConsumed30 = [],
     wizPerDayPerGNO = [];
 
@@ -138,13 +136,6 @@ createChart({
     chartData: wizConsumed,
     title: 'Total WIZ Consumed',
     range: 100
-});
-
-createChart({
-    chartCanvas: document.getElementById("gno-to-lock"),
-    chartData: gnoToLock,
-    title: 'GNO To Lock',
-    range: 0
 });
 
 // -----------------------------------------------------------------------------
@@ -177,7 +168,7 @@ createChart({
                 x: i,
                 y: ((wizConsumed30[i].y / 30) +
                     Math.max(0, ((wizConsumed30[i].y * 20) - totalWiz[i].y) / 90))
-                    / (gnoLocked[i].y + gnoToLock[i].y)
+                    / (gnoLocked[i].y)
             };
         }
     }
