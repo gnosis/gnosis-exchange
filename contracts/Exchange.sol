@@ -14,6 +14,31 @@ contract Exchange {
         uint[2] supplies;  // amount held by exchange of each token type
     }
 
+    // Exchange creation event
+    event LogAddExchange(
+        bytes32 exchangeIdentifier,
+        address[2] tokens,
+        uint[2] supplies
+    );
+
+    // Exchange funding event
+    event LogFundExchange(
+        bytes32 exchangeIdentifier,
+        uint8 tokenIndex,
+        uint amount,
+        address suppliedToken,
+        uint newSupply
+    );
+
+    // Exchange transaction event
+    event LogExchangeTransaction(
+        bytes32 exchangeIdentifier,
+        uint8 purchasedTokenIndex,
+        uint amountPurchased,
+        address purchasedToken,
+        uint[2] newSupplies
+    );
+
     /// @param exchangeIdentifier The ID of the exchange
     /// @return tokens The addresses of the tokens handled by the requested exchange
     /// @return supplies How much of each of the currencies the exchange holds for providing liquidity
