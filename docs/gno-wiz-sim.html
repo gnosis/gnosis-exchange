@@ -1,14 +1,28 @@
+<style>
+.charts {
+    display: flex;
+    flex-wrap: wrap;
+}
+canvas {
+    width: 100%;
+    max-width: 480px;
+}
+</style>
 <main>
 
 <h1>Input</h1>
-<canvas id="total-wiz"></canvas>
-<canvas id="gno-locked"></canvas>
-<canvas id="wiz-consumed"></canvas>
-<canvas id="gno-to-lock"></canvas>
+<div class="charts">
+    <canvas id="total-wiz"></canvas>
+    <canvas id="gno-locked"></canvas>
+    <canvas id="wiz-consumed"></canvas>
+    <canvas id="gno-to-lock"></canvas>
+</div class="charts">
 
 <h1>Output</h1>
-<canvas id="wiz-consumed-30"></canvas>
-<canvas id="wiz-per-day-per-gno"></canvas>
+<div class="charts">
+    <canvas id="wiz-consumed-30"></canvas>
+    <canvas id="wiz-per-day-per-gno"></canvas>
+</div class="charts">
 
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.js" integrity="sha256-1qeNeAAFNi/g6PFChfXQfa6CQ8eXoHXreohinZsoJOQ=" crossorigin="anonymous"></script>
