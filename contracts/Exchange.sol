@@ -3,7 +3,7 @@ pragma solidity ^0.4.8;
 // Use audited ERC20 interface
 import "tokens/Token.sol";
 
-/// @title Currency exchange backed by holdings with price analysis functions
+/// @title Currency exchange backed by holdings
 contract Exchange {
     // A mapping from exchange identifiers to their corresponding Exchange struct instances
     mapping (bytes32 => Exchange) exchanges;
