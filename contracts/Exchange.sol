@@ -5,6 +5,11 @@ import "tokens/Token.sol";
 
 /// @title Currency exchange backed by holdings
 contract Exchange {
+    // Duration of price ramp
+    uint constant priceRampDuration = 86400;
+    // Duration of price lock (See: http://ethereum.stackexchange.com/a/6796)
+    uint constant priceLockDuration = 900;
+
     // A mapping from exchange identifiers to their corresponding Exchange struct instances
     mapping (bytes32 => Exchange) exchanges;
 
@@ -12,6 +17,8 @@ contract Exchange {
     struct Exchange {
         address[2] tokens; // token pair in exchange
         uint[2] supplies;  // amount held by exchange of each token type
+        uint[2] lastPricePoint;
+        uint lastUpdateTimestamp;
     }
 
     /// @param exchangeIdentifier The ID of the exchange
@@ -24,6 +31,25 @@ contract Exchange {
         Exchange ex = exchanges[exchangeIdentifier];
         tokens = ex.tokens;
         supplies = ex.supplies;
+    }
+
+    /// @param exchangeIdentifier The ID of the exchange
+    /// @return A pair that indicates price
+    function getPricePoint(bytes32 exchangeIdentifier)
+        constant
+        returns (uint[2])
+    {
+        Exchange ex = exchanges[exchangeIdentifier];
+        uint param = 0;
+        if(now > ex.lastUpdateTimestamp + priceLockDuration)
+            param = now - ex.lastUpdateTimestamp - priceLockDuration;
+            if(param > priceRampDuration)
+                param = priceRampDuration;
+
+        return [
+            (ex.supplies[0] - ex.lastPricePoint[0]) * param / priceRampDuration + ex.lastPricePoint[0],
+            (ex.supplies[1] - ex.lastPricePoint[1]) * param / priceRampDuration + ex.lastPricePoint[1]
+        ];
     }
 
     /// @notice Send amount `supplies[i]` of token `tokens[i]` to this contract to create exchange for token pair
@@ -42,7 +68,9 @@ contract Exchange {
             throw;
         exchanges[exchangeIdentifier] = Exchange({
             tokens: tokens,
-            supplies: supplies
+            supplies: supplies,
+            lastPricePoint: supplies,
+            lastUpdateTimestamp: now
         });
     }
 
@@ -56,6 +84,8 @@ contract Exchange {
         Exchange ex = exchanges[exchangeIdentifier];
         if (!Token(ex.tokens[tokenIndex]).transferFrom(msg.sender, this, amount))
             throw;
+        ex.lastPricePoint = getPricePoint(exchangeIdentifier);
+        ex.lastUpdateTimestamp = now;
         ex.supplies[tokenIndex] += amount;
     }
 
@@ -73,6 +103,9 @@ contract Exchange {
             throw;
         if (!Token(ex.tokens[tokenIndex]).transfer(msg.sender, amount))
             throw;
+
+        ex.lastPricePoint = getPricePoint(exchangeIdentifier);
+        ex.lastUpdateTimestamp = now;
         ex.supplies[paymentTokenIndex] += costs;
         ex.supplies[tokenIndex] -= amount;
     }
