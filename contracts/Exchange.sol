@@ -18,6 +18,7 @@ contract Exchange {
     /// @return tokens The addresses of the tokens handled by the requested exchange
     /// @return supplies How much of each of the currencies the exchange holds for providing liquidity
     function getExchange(bytes32 exchangeIdentifier)
+        constant
         returns (address[2] tokens, uint[2] supplies)
     {
         Exchange ex = exchanges[exchangeIdentifier];
@@ -82,7 +83,7 @@ contract Exchange {
     /// @param amount Amount of `tokens[tokenIndex]` to buy from exchange
     /// @return Price of `amount` of `tokens[tokenIndex]` in `tokens[1-tokenIndex]`
     function calcCosts(bytes32 exchangeIdentifier, uint8 tokenIndex, uint amount)
-        public
+        public constant
         returns (uint)
     {
         Exchange ex = exchanges[exchangeIdentifier];
@@ -97,7 +98,7 @@ contract Exchange {
         return minuend - subtrahend;
     }
 
-    /// @param Token pair to get exchange ID for
+    /// @param tokens Token pair to get exchange ID for
     /// @return The exchange ID
     function calcExchangeIdentifier(address[2] tokens)
         public
