@@ -138,6 +138,6 @@ contract Exchange {
         constant
         returns (bytes32)
     {
-        return bytes32(tokens[0]) ^ bytes32(tokens[1]);
+        return keccak256(tokens[0]) ^ keccak256(tokens[1]);
     }
 }
