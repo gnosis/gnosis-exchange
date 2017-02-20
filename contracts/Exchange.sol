@@ -1,7 +1,7 @@
 pragma solidity ^0.4.8;
 
-// Use audited ERC20 interface
-import "tokens/Token.sol";
+import "tokens/Token.sol"; // Use audited ERC20 interface
+import "./Arithmetic.sol";
 
 /// @title Currency exchange backed by holdings
 contract Exchange {
@@ -47,8 +47,8 @@ contract Exchange {
                 param = priceRampDuration;
 
         return [
-            (ex.supplies[0] - ex.lastPricePoint[0]) * param / priceRampDuration + ex.lastPricePoint[0],
-            (ex.supplies[1] - ex.lastPricePoint[1]) * param / priceRampDuration + ex.lastPricePoint[1]
+            Arithmetic.overflowResistantFraction((ex.supplies[0] - ex.lastPricePoint[0]), param, priceRampDuration) + ex.lastPricePoint[0],
+            Arithmetic.overflowResistantFraction((ex.supplies[1] - ex.lastPricePoint[1]), param, priceRampDuration) + ex.lastPricePoint[1]
         ];
     }
 
@@ -134,8 +134,7 @@ contract Exchange {
     /// @param tokens Token pair to get exchange ID for
     /// @return The exchange ID
     function calcExchangeIdentifier(address[2] tokens)
-        public
-        constant
+        public constant
         returns (bytes32)
     {
         return keccak256(tokens[0]) ^ keccak256(tokens[1]);
