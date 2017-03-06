@@ -12,7 +12,6 @@ canvas {
 
 <h1>Input</h1>
 <div class="charts">
-    <canvas id="total-wiz"></canvas>
     <canvas id="gno-locked"></canvas>
     <canvas id="wiz-consumed"></canvas>
 </div class="charts">
@@ -21,9 +20,13 @@ canvas {
 <div class="charts">
     <canvas id="wiz-consumed-30"></canvas>
     <canvas id="wiz-per-day-per-gno"></canvas>
+    <canvas id="total-wiz"></canvas>
 </div class="charts">
 
 </main>
+<script type="text/javascript" async
+  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.js" integrity="sha256-1qeNeAAFNi/g6PFChfXQfa6CQ8eXoHXreohinZsoJOQ=" crossorigin="anonymous"></script>
 <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js" integrity="sha256-RASNMNlmRtIreeznffYMDUxBXcMRjijEaaGF/gxT6vw=" crossorigin="anonymous"></script> -->
 <script>
@@ -102,27 +105,16 @@ function createChart(opts) {
                 lastChartPos = chartPos;
             }
         });
-    } else {
-        setInterval(function() {
-            chartDataFunction(chartData);
-            chart.update(0);
-        }, 1000);
     }
+    return chart;
 }
 
 var NUM_DAYS = 90,
-    totalWiz = [],
     gnoLocked = [],
     wizConsumed = [],
     wizConsumed30 = [],
-    wizPerDayPerGNO = [];
-
-createChart({
-    chartCanvas: document.getElementById("total-wiz"),
-    chartData: totalWiz,
-    title: 'Total WIZ',
-    range: 1000
-});
+    wizPerDayPerGNO = [],
+    totalWiz = [];
 
 createChart({
     chartCanvas: document.getElementById("gno-locked"),
@@ -140,37 +132,56 @@ createChart({
 
 // -----------------------------------------------------------------------------
 
-createChart({
+var wizConsumed30Chart = createChart({
     type: 'output',
     chartCanvas: document.getElementById("wiz-consumed-30"),
     chartData: wizConsumed30,
-    title: 'Total WIZ Consumed 30 Days Cumulative',
-    chartDataFunction: function(data) {
-        var wizCons = 0;
-        for(var i = 0; i < NUM_DAYS; i++) {
-            wizCons += wizConsumed[i].y;
-            if(i - 30 >= 0) {
-                wizCons -= wizConsumed[i - 30].y;
-            }
-            data[i] = {x: i, y: wizCons};
-        }
-    }
+    title: 'Total WIZ Consumed 30 Days Cumulative'
 });
 
-createChart({
+var wizPerDayPerGNOChart = createChart({
     type: 'output',
     chartCanvas: document.getElementById("wiz-per-day-per-gno"),
     chartData: wizPerDayPerGNO,
-    title: 'WIZ Per Day Per GNO',
-    chartDataFunction: function(data) {
-        for(var i = 0; i < NUM_DAYS; i++) {
-            data[i] = {
+    title: 'WIZ Per Day Per GNO'
+});
+
+var totalWizChart = createChart({
+    type: 'output',
+    chartCanvas: document.getElementById("total-wiz"),
+    chartData: totalWiz,
+    title: 'Total WIZ'
+});
+
+setInterval(function() {
+    var wizCons = 0;
+    for(var i = 0; i < NUM_DAYS; i++) {
+        wizCons += wizConsumed[i].y;
+        if(i - 30 >= 0) {
+            wizCons -= wizConsumed[i - 30].y;
+        }
+        wizConsumed30[i] = {x: i, y: wizCons};
+    }
+
+    totalWiz[0] = {x: 0, y: 10000};
+
+    for(var i = 0; i < NUM_DAYS; i++) {
+        if(i > 0) {
+            totalWiz[i] = {
                 x: i,
-                y: ((wizConsumed30[i].y / 30) +
-                    Math.max(0, ((wizConsumed30[i].y * 20) - totalWiz[i].y) / 90))
-                    / (gnoLocked[i].y)
+                y: totalWiz[i-1].y - wizConsumed[i-1].y +
+                    gnoLocked[i-1].y * wizPerDayPerGNO[i-1].y
             };
         }
+        wizPerDayPerGNO[i] = {
+            x: i,
+            y: ((wizConsumed30[i].y / 30) +
+                Math.max(0, ((wizConsumed30[i].y * 20) - totalWiz[i].y) / 90))
+                / (gnoLocked[i].y == 0 ? Number.MIN_VALUE : gnoLocked[i].y)
+        };
     }
-});
+    wizConsumed30Chart.update(0);
+    wizPerDayPerGNOChart.update(0);
+    totalWizChart.update(0);
+}, 1000);
 </script>
