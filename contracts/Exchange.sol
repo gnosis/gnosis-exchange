@@ -21,6 +21,31 @@ contract Exchange {
         uint lastUpdateTimestamp;
     }
 
+    // Exchange creation event
+    event LogAddExchange(
+        bytes32 exchangeIdentifier,
+        address[2] tokens,
+        uint[2] supplies
+    );
+
+    // Exchange funding event
+    event LogFundExchange(
+        bytes32 exchangeIdentifier,
+        uint8 tokenIndex,
+        uint amount,
+        address suppliedTokenAddress,
+        uint newSupply
+    );
+
+    // Exchange transaction event
+    event LogExchangeTransaction(
+        bytes32 exchangeIdentifier,
+        uint8 purchasedTokenIndex,
+        uint amountPurchased,
+        address purchasedTokenAddress,
+        uint[2] newSupplies
+    );
+
     /// @param exchangeIdentifier The ID of the exchange
     /// @return tokens The addresses of the tokens handled by the requested exchange
     /// @return supplies How much of each of the currencies the exchange holds for providing liquidity
@@ -72,6 +97,7 @@ contract Exchange {
             lastPricePoint: supplies,
             lastUpdateTimestamp: now
         });
+        LogAddExchange(exchangeIdentifier, tokens, supplies);
     }
 
     /// @notice Send `amount` of token `tokens[tokenIndex]` to this contract to fund exchange
@@ -82,11 +108,13 @@ contract Exchange {
         public
     {
         Exchange ex = exchanges[exchangeIdentifier];
-        if (!Token(ex.tokens[tokenIndex]).transferFrom(msg.sender, this, amount))
+        address suppliedTokenAddress = ex.tokens[tokenIndex];
+        if (!Token(suppliedTokenAddress).transferFrom(msg.sender, this, amount))
             throw;
         ex.lastPricePoint = getPricePoint(exchangeIdentifier);
         ex.lastUpdateTimestamp = now;
         ex.supplies[tokenIndex] += amount;
+        LogFundExchange(exchangeIdentifier, tokenIndex, amount, suppliedTokenAddress, ex.supplies[tokenIndex]);
     }
 
     /// @notice Send `calcCosts(exchangeIdentifier, tokenIndex, amount)` of `tokens[1-tokenIndex]` to buy `amount` of `tokens[tokenIndex]` from exchange.
@@ -108,6 +136,7 @@ contract Exchange {
         ex.lastUpdateTimestamp = now;
         ex.supplies[paymentTokenIndex] += costs;
         ex.supplies[tokenIndex] -= amount;
+        LogExchangeTransaction(exchangeIdentifier, tokenIndex, amount, ex.tokens[tokenIndex], ex.supplies);
     }
 
     /// @dev Will price `tokens[tokenIndex]` to keep `supplies[0] * supplies[1]` the same after sending `amount` of `tokens[tokenIndex]` to `msg.sender` and receiving the calculated price of `tokens[1-tokenIndex]` from `msg.sender`
